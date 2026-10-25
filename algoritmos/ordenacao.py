@@ -19,7 +19,7 @@ def bubble_sort(entrada: List[int]) -> List[PassoExecucao]:
         for j in range(n - 1 - i):
             passos.append(PassoExecucao(
                 lista=list(a), foco=[j, j + 1], fixos=list(range(n - i, n)),
-                tipo="comparacao",
+                tipo="comparacao", linha="compara",
                 texto=f"Compara as posicoes {j} e {j + 1}: {a[j]} e {a[j + 1]}",
             ))
             if a[j] > a[j + 1]:
@@ -27,16 +27,18 @@ def bubble_sort(entrada: List[int]) -> List[PassoExecucao]:
                 a[j], a[j + 1] = a[j + 1], a[j]
                 passos.append(PassoExecucao(
                     lista=list(a), foco=[j, j + 1], fixos=list(range(n - i, n)),
-                    tipo="troca",
+                    tipo="troca", linha="troca",
                     texto=f"{maior} > {menor} — troca as posicoes {j} e {j + 1}",
                 ))
         passos.append(PassoExecucao(
             lista=list(a), fixos=list(range(n - 1 - i, n)), tipo="ok",
+            linha="fim_passada",
             texto=f"Fim da passada {i + 1}: {a[n - 1 - i]} ficou na posicao final",
         ))
 
     passos.append(PassoExecucao(
-        lista=list(a), fixos=list(range(n)), tipo="fim", texto="Lista ordenada",
+        lista=list(a), fixos=list(range(n)), tipo="fim", linha="fim",
+        texto="Lista ordenada",
     ))
     return passos
 
@@ -50,18 +52,20 @@ def selection_sort(entrada: List[int]) -> List[PassoExecucao]:
         menor = i
         passos.append(PassoExecucao(
             lista=list(a), foco=[i], fixos=list(range(i)), tipo="ok",
+            linha="assume_menor",
             texto=f"Passada {i + 1}: assume {a[i]} (posicao {i}) como o menor",
         ))
         for j in range(i + 1, n):
             passos.append(PassoExecucao(
                 lista=list(a), foco=[j, menor], fixos=list(range(i)),
-                tipo="comparacao",
+                tipo="comparacao", linha="compara",
                 texto=f"Compara {a[j]} com o menor atual {a[menor]}",
             ))
             if a[j] < a[menor]:
                 menor = j
                 passos.append(PassoExecucao(
                     lista=list(a), foco=[menor], fixos=list(range(i)), tipo="ok",
+                    linha="novo_menor",
                     texto=f"Novo menor: {a[menor]} na posicao {menor}",
                 ))
         if menor != i:
@@ -69,11 +73,13 @@ def selection_sort(entrada: List[int]) -> List[PassoExecucao]:
             a[i], a[menor] = a[menor], a[i]
             passos.append(PassoExecucao(
                 lista=list(a), foco=[i, menor], fixos=list(range(i)), tipo="troca",
+                linha="troca",
                 texto=f"Troca {x} e {y} — o menor vai para a posicao {i}",
             ))
 
     passos.append(PassoExecucao(
-        lista=list(a), fixos=list(range(n)), tipo="fim", texto="Lista ordenada",
+        lista=list(a), fixos=list(range(n)), tipo="fim", linha="fim",
+        texto="Lista ordenada",
     ))
     return passos
 
@@ -88,31 +94,33 @@ def insertion_sort(entrada: List[int]) -> List[PassoExecucao]:
         # A chave sai da lista e fica "na mao": a posicao i vira um buraco.
         passos.append(PassoExecucao(
             lista=list(a), foco=[i], fixos=list(range(i)), buraco=[i],
-            chave=chave, tipo="ok",
+            chave=chave, tipo="ok", linha="retira",
             texto=f"Retira {chave} da posicao {i} para inserir na parte ordenada",
         ))
         j = i - 1
         while j >= 0 and a[j] > chave:
             passos.append(PassoExecucao(
                 lista=list(a), foco=[j], fixos=list(range(i)), buraco=[j + 1],
-                chave=chave, tipo="comparacao",
+                chave=chave, tipo="comparacao", linha="compara",
                 texto=f"{a[j]} > {chave} — desloca {a[j]} uma posicao a direita",
             ))
             a[j + 1] = a[j]
             passos.append(PassoExecucao(
                 lista=list(a), foco=[j + 1], fixos=list(range(i)), buraco=[j],
-                chave=chave, tipo="troca",
+                chave=chave, tipo="troca", linha="desloca",
                 texto=f"{a[j + 1]} passa para a posicao {j + 1}; a posicao {j} fica aberta",
             ))
             j -= 1
         a[j + 1] = chave
         passos.append(PassoExecucao(
             lista=list(a), foco=[j + 1], fixos=list(range(i + 1)), tipo="troca",
+            linha="insere",
             texto=f"Insere {chave} na posicao {j + 1}",
         ))
 
     passos.append(PassoExecucao(
-        lista=list(a), fixos=list(range(n)), tipo="fim", texto="Lista ordenada",
+        lista=list(a), fixos=list(range(n)), tipo="fim", linha="fim",
+        texto="Lista ordenada",
     ))
     return passos
 
@@ -132,15 +140,17 @@ def merge_sort(entrada: List[int]) -> List[PassoExecucao]:
         direita = a[meio + 1:fim + 1]
         passos.append(PassoExecucao(
             lista=list(a), foco=list(range(inicio, fim + 1)), tipo="ok",
+            linha="copia",
             texto=f"Copia as duas metades e intercala {esquerda} com {direita}",
         ))
 
-        def registrar(k: int, texto: str) -> None:
+        def registrar(k: int, texto: str, linha: str) -> None:
             # As posicoes a frente do ponteiro de escrita ainda guardam os
             # valores antigos do trecho; marca-las evita leitura equivocada.
             passos.append(PassoExecucao(
                 lista=list(a), foco=[k], fixos=list(range(inicio, k)),
-                buraco=list(range(k + 1, fim + 1)), tipo="troca", texto=texto,
+                buraco=list(range(k + 1, fim + 1)), tipo="troca",
+                linha=linha, texto=texto,
             ))
 
         i = j = 0
@@ -152,21 +162,25 @@ def merge_sort(entrada: List[int]) -> List[PassoExecucao]:
             else:
                 a[k] = direita[j]
                 j += 1
-            registrar(k, f"Menor valor da vez: {a[k]} vai para a posicao {k}")
+            registrar(k, f"Menor valor da vez: {a[k]} vai para a posicao {k}",
+                      "intercala")
             k += 1
         while i < len(esquerda):
             a[k] = esquerda[i]
-            registrar(k, f"Restou {a[k]} na metade da esquerda — posicao {k}")
+            registrar(k, f"Restou {a[k]} na metade da esquerda — posicao {k}",
+                      "resto_esq")
             i += 1
             k += 1
         while j < len(direita):
             a[k] = direita[j]
-            registrar(k, f"Restou {a[k]} na metade da direita — posicao {k}")
+            registrar(k, f"Restou {a[k]} na metade da direita — posicao {k}",
+                      "resto_dir")
             j += 1
             k += 1
 
         passos.append(PassoExecucao(
             lista=list(a), fixos=list(range(inicio, fim + 1)), tipo="ok",
+            linha="trecho_ok",
             texto=f"Trecho das posicoes {inicio} a {fim} intercalado",
         ))
 
@@ -176,6 +190,7 @@ def merge_sort(entrada: List[int]) -> List[PassoExecucao]:
         meio = (inicio + fim) // 2
         passos.append(PassoExecucao(
             lista=list(a), foco=list(range(inicio, fim + 1)), tipo="comparacao",
+            linha="divide",
             texto=f"Divide o trecho das posicoes {inicio} a {fim} ao meio",
         ))
         dividir(inicio, meio)
@@ -184,6 +199,7 @@ def merge_sort(entrada: List[int]) -> List[PassoExecucao]:
 
     dividir(0, n - 1)
     passos.append(PassoExecucao(
-        lista=list(a), fixos=list(range(n)), tipo="fim", texto="Lista ordenada",
+        lista=list(a), fixos=list(range(n)), tipo="fim", linha="fim",
+        texto="Lista ordenada",
     ))
     return passos

@@ -68,6 +68,23 @@ h1, h2, h3 {{ font-family: 'Space Grotesk', system-ui, sans-serif !important;
                     letter-spacing: 0.1em; color: {CORES['blue_bright']}; font-weight: 600; }}
 .av-legenda .txt {{ font-size: 14px; color: {CORES['ink']}; margin-top: 2px; }}
 
+/* lista + pseudocodigo lado a lado; em tela estreita o codigo desce (RNF09) */
+.av-visual {{ display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; }}
+.av-visual-lista {{ flex: 1 1 520px; min-width: 0; }}
+.av-codigo {{ flex: 1 1 300px; min-width: 0; background: {CORES['surface']};
+              border: 1px solid {CORES['line']}; border-radius: 12px; padding: 14px 0 12px;
+              font-family: 'IBM Plex Mono', monospace; font-size: 13px; overflow-x: auto; }}
+.av-codigo-titulo {{ padding: 0 16px 8px; color: {CORES['gray']}; }}
+.av-codigo-linhas {{ min-width: max-content; }}
+.av-linha {{ display: flex; gap: 12px; padding: 2px 16px 2px 13px; line-height: 1.6;
+             border-left: 3px solid transparent; color: {CORES['ink2']};
+             transition: background-color .25s ease, border-color .25s ease; }}
+.av-linha .num {{ min-width: 18px; text-align: right; color: {CORES['gray']};
+                  user-select: none; }}
+.av-linha .txt {{ white-space: pre; }}
+.av-linha.ativa {{ background: {CORES['amber_soft']}; border-left-color: {CORES['amber']};
+                   color: {CORES['ink']}; font-weight: 600; }}
+
 /* cartoes */
 .av-card {{ background: {CORES['surface']}; border: 1px solid {CORES['line']};
             border-radius: 12px; padding: 18px 20px; }}

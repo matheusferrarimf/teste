@@ -6,7 +6,7 @@ sequencia que a camada de apresentacao transforma em animacao.
 """
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -30,6 +30,9 @@ class PassoExecucao:
     tipo         comparacao | troca | ok | fim
     texto        descricao em linguagem natural, exibida ao estudante
     chave        valor retirado da lista e mantido "na mao" (Insertion Sort)
+    linha        rotulo da linha do pseudocodigo responsavel por este quadro
+                 (ver algoritmos/pseudocodigo.py); a apresentacao usa esse
+                 rotulo para destacar a linha correspondente
     """
 
     lista: List[int]
@@ -40,6 +43,7 @@ class PassoExecucao:
     tipo: str = "comparacao"
     texto: str = ""
     chave: int = None
+    linha: Optional[str] = None
 
 
 def contar(passos: List[PassoExecucao]) -> dict:

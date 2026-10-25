@@ -7,6 +7,7 @@ registra-lo em MOTORES. Nenhuma outra camada precisa ser alterada.
 from .base import PassoExecucao, contar
 from .busca import busca_binaria, busca_linear
 from .ordenacao import bubble_sort, insertion_sort, merge_sort, selection_sort
+from .pseudocodigo import PSEUDOCODIGO, indice_da_linha
 
 MOTORES = {
     "bubble": {
@@ -48,4 +49,5 @@ __all__ = [
     "MOTORES", "gerar_passos", "PassoExecucao", "contar",
     "bubble_sort", "selection_sort", "insertion_sort", "merge_sort",
     "busca_linear", "busca_binaria",
+    "PSEUDOCODIGO", "indice_da_linha",
 ]

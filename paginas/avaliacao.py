@@ -1,30 +1,45 @@
-"""Questionario de avaliacao do prototipo, aplicado ao final da rodada."""
+"""Questionario de avaliacao do prototipo, aplicado ao final da visita.
 
+Uma visita pode ter varios modulos concluidos. A avaliacao continua ligada
+a uma unica sessao no banco (avaliacao 1 : 0..1 sessao): a da ultima
+sessao concluida.
+"""
+
+import html
 import time
 
 import streamlit as st
 
-from componentes.estilo import titulo
+from componentes.estilo import CORES, titulo
 from dados import repositorio
 from servicos.analise import CRITERIOS
-from servicos.pontuacao import pontuacao_maxima
+from servicos.pontuacao import resumir_visita
 
 
-def _resumo(rodada: dict) -> None:
-    total = len(rodada["questoes"])
-    tempos = rodada["tempos"] or [0]
-    maximo = pontuacao_maxima(rodada["questoes"])
+def _resumo(sessoes: list) -> None:
+    visita = resumir_visita(sessoes)
 
-    st.markdown('<div class="av-eyebrow">Sessao concluida</div>', unsafe_allow_html=True)
+    rotulo = "Modulo concluido" if len(sessoes) == 1 else f"{len(sessoes)} modulos concluidos"
+    st.markdown(f'<div class="av-eyebrow">{rotulo}</div>', unsafe_allow_html=True)
+    for s in sessoes:
+        st.markdown(
+            f'<div style="font-size:14px;color:{CORES["ink2"]};padding:2px 0">'
+            f'<strong style="color:{CORES["ink"]}">{html.escape(s["nome_conteudo"])}</strong> · '
+            f'{s["pontos"]} de {s["maximo"]} pts · {s["acertos"]} de {s["total"]} acertos'
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("")
     col1, col2, col3 = st.columns(3)
-    col1.metric("Pontuacao", f"{rodada['pontos']} de {maximo}")
-    col2.metric("Acertos", f"{rodada['acertos']} de {total}")
-    col3.metric("Tempo medio", f"{sum(tempos) / len(tempos):.0f}s por questao")
+    col1.metric("Pontuacao da visita", f"{visita['pontos']} de {visita['maximo']}")
+    col2.metric("Acertos", f"{visita['acertos']} de {visita['total']}")
+    col3.metric("Tempo medio", f"{visita['tempo_medio']:.0f}s por questao")
 
 
 def render() -> None:
-    rodada = st.session_state.get("rodada")
-    if not rodada:
+    sessoes = st.session_state.get("sessoes_concluidas") or []
+    if not sessoes:
         st.session_state.tela = "inicio"
         st.rerun()
         return
@@ -32,7 +47,7 @@ def render() -> None:
     if "inicio_avaliacao" not in st.session_state:
         st.session_state.inicio_avaliacao = time.time()
 
-    _resumo(rodada)
+    _resumo(sessoes)
     st.divider()
 
     titulo(
@@ -57,9 +72,15 @@ def render() -> None:
     if enviado:
         segundos = int(time.time() - st.session_state.inicio_avaliacao)
         repositorio.salvar_avaliacao(
-            rodada["id_sessao"], notas, comentario.strip(), segundos
+            sessoes[-1]["id_sessao"], notas, comentario.strip(), segundos
         )
-        st.session_state.rodada = None
+        # Limpar o apelido reabre o pop-up de identificacao para o proximo
+        # aluno que usar o mesmo computador do laboratorio.
+        st.session_state.sessoes_concluidas = []
         st.session_state.pop("inicio_avaliacao", None)
-        st.session_state.tela = "dashboard"
+        st.session_state.apelido = ""
+        st.session_state.rodada = None
+        st.session_state.tela = "inicio"
+        # O toast e exibido pela tela inicial: chamado aqui, sumiria no rerun.
+        st.session_state.agradecer = True
         st.rerun()

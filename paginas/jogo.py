@@ -5,7 +5,9 @@ import time
 import streamlit as st
 
 from algoritmos import MOTORES, contar
+from componentes.dialogos import dialogo_fim_modulo
 from componentes.estilo import CORES
+from componentes.fluxo import concluir_modulo
 from componentes.ui import badge_peso, etiqueta
 from componentes.visualizacao import controles_passo, lista_estatica
 from dados import repositorio
@@ -49,8 +51,7 @@ def _confirmar(questao: dict, id_alternativa: int, rodada: dict) -> None:
 
 def _proxima(rodada: dict) -> None:
     if rodada["indice"] + 1 >= len(rodada["questoes"]):
-        repositorio.finalizar_sessao(rodada["id_sessao"])
-        st.session_state.tela = "avaliacao"
+        concluir_modulo()
     else:
         rodada["indice"] += 1
         st.session_state.inicio_questao = time.time()
@@ -61,6 +62,14 @@ def _proxima(rodada: dict) -> None:
 
 
 def render() -> None:
+    # Precisa vir antes da checagem de rodada: ao concluir o modulo a rodada
+    # ja foi zerada, e sem esta ordem o aluno voltaria direto para o inicio.
+    if st.session_state.get("fim_modulo_pendente"):
+        st.markdown('<div class="av-eyebrow">Modulo concluido</div>',
+                    unsafe_allow_html=True)
+        dialogo_fim_modulo()
+        return
+
     rodada = st.session_state.get("rodada")
     if not rodada:
         st.session_state.tela = "inicio"
@@ -85,11 +94,13 @@ def render() -> None:
         if not respondida:
             # RN09: a execucao so aparece depois da resposta, para nao entregar o gabarito
             foco = [0, 1] if questao["chave_algoritmo"] == "bubble" else []
-            lista_estatica(questao["lista_inicial"], foco)
+            lista_estatica(questao["lista_inicial"], foco,
+                           chave_algoritmo=questao["chave_algoritmo"])
             st.caption("A execucao completa aparece depois que voce responder.")
         else:
             passos = passos_da_questao(questao)
-            controles_passo(passos, chave=f"q{questao['id_questao']}")
+            controles_passo(passos, chave=f"q{questao['id_questao']}",
+                            chave_algoritmo=questao["chave_algoritmo"])
             metricas = contar(passos)
             st.caption(
                 f"{metricas['comparacoes']} comparacoes · {metricas['trocas']} movimentacoes "
@@ -121,5 +132,5 @@ def render() -> None:
         )
         st.markdown("")
         ultima = rodada["indice"] + 1 >= len(rodada["questoes"])
-        if st.button("Avaliar o prototipo" if ultima else "Proxima questao", type="primary"):
+        if st.button("Concluir modulo" if ultima else "Proxima questao", type="primary"):
             _proxima(rodada)

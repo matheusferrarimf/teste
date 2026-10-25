@@ -30,3 +30,23 @@ def aproveitamento(pontos: int, maximo: int) -> float:
 def liberou_proximo_nivel(acertos: int, total: int, minimo: float = 0.70) -> bool:
     """RN10: avanco de nivel exige 70% de acertos."""
     return total > 0 and (acertos / total) >= minimo
+
+
+def resumir_visita(sessoes: list[dict]) -> dict:
+    """Totais dos modulos concluidos numa mesma visita.
+
+    Cada sessao traz pontos, maximo, acertos, total e tempos (segundos por
+    questao). O tempo medio considera todas as questoes da visita, e nao a
+    media das medias de cada modulo.
+    """
+    pontos = sum(s["pontos"] for s in sessoes)
+    maximo = sum(s["maximo"] for s in sessoes)
+    tempos = [t for s in sessoes for t in s["tempos"]]
+    return {
+        "pontos": pontos,
+        "maximo": maximo,
+        "acertos": sum(s["acertos"] for s in sessoes),
+        "total": sum(s["total"] for s in sessoes),
+        "tempo_medio": (sum(tempos) / len(tempos)) if tempos else 0.0,
+        "aproveitamento": aproveitamento(pontos, maximo),
+    }

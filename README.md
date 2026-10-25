@@ -28,8 +28,10 @@ pip install pytest
 pytest testes/ -v
 ```
 
-São 83 verificações cobrindo os geradores de passos, as regras de negócio, a camada
-de dados e as regras de sinalização do dashboard.
+São 130 verificações cobrindo os geradores de passos, o vínculo entre passos e
+linhas do pseudocódigo, as regras de negócio, a camada de dados, as regras de
+sinalização do dashboard, a identificação do aluno, o resumo da visita e os
+pop-ups (via `streamlit.testing.v1.AppTest`, sobre um banco temporário).
 
 ---
 
@@ -55,17 +57,21 @@ algovis/
 ├── componentes/              APRESENTAÇÃO — elementos reutilizáveis
 │   ├── estilo.py             Tokens de cor, tipografia e CSS
 │   ├── visualizacao.py       Renderização da lista e animação
+│   ├── dialogos.py           Pop-ups de identificação e de fim de módulo
+│   ├── fluxo.py              Início de rodada, conclusão de módulo e fim da visita
 │   └── ui.py                 Etiquetas, KPIs, barras de média
 │
 ├── servicos/                 CAMADA DE APLICAÇÃO (regras de negócio)
 │   ├── controle_questao.py   Montagem da rodada e validação de respostas
-│   ├── pontuacao.py          Pesos, pontuação e regra de progressão
+│   ├── identificacao.py      Validação do apelido do aluno
+│   ├── pontuacao.py          Pesos, pontuação, progressão e resumo da visita
 │   └── analise.py            Sinalização de respostas sem atenção
 │
 ├── algoritmos/               CAMADA DE DOMÍNIO
 │   ├── base.py               PassoExecucao
 │   ├── ordenacao.py          Bubble, Selection, Insertion, Merge
 │   ├── busca.py              Linear e binária
+│   ├── pseudocodigo.py       Pseudocódigo de cada algoritmo e rótulos das linhas
 │   └── __init__.py           Registro MOTORES
 │
 ├── dados/                    CAMADA DE DADOS
@@ -75,6 +81,8 @@ algovis/
 │
 └── testes/
     ├── test_algoritmos.py
+    ├── test_fluxo.py
+    ├── test_pseudocodigo.py
     └── test_regras.py
 ```
 
@@ -96,6 +104,7 @@ class PassoExecucao:
     tipo: str                # comparacao | troca | ok | fim
     texto: str               # descrição em linguagem natural
     chave: int               # valor "na mão" (Insertion Sort)
+    linha: str               # rótulo da linha do pseudocódigo deste quadro
 ```
 
 A camada de apresentação apenas percorre essa lista e desenha cada quadro. Para

@@ -30,6 +30,9 @@ PADROES = {
     "respondida": False,
     "resultado": None,
     "apelido": "",
+    # resumo de cada modulo concluido nesta visita (ver componentes/fluxo.py)
+    "sessoes_concluidas": [],
+    "fim_modulo_pendente": False,
 }
 for chave, valor in PADROES.items():
     st.session_state.setdefault(chave, valor)
@@ -54,7 +57,9 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    em_rodada = st.session_state.tela in ("jogo", "avaliacao")
+    # Cobre o jogo, o pop-up de fim de modulo (que abre na tela "jogo") e a avaliacao.
+    em_rodada = (st.session_state.tela in ("jogo", "avaliacao")
+                 or st.session_state.fim_modulo_pendente)
     for chave, rotulo in MENU.items():
         if st.button(
             rotulo,
