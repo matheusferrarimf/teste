@@ -21,6 +21,10 @@ A aplicação abre em `http://localhost:8501`. O banco SQLite é criado e popula
 automaticamente na primeira execução, em `dados/algovis.db`. Para começar do zero,
 basta apagar esse arquivo.
 
+Bancos já em uso não são recriados: novas versões do banco de questões entram por
+migração (`dados/seed.py`, versão registrada em `PRAGMA user_version`), preservando
+respostas e avaliações já coletadas. Questões excluídas pelo professor não voltam.
+
 ## Como rodar os testes
 
 ```bash
@@ -28,8 +32,10 @@ pip install pytest
 pytest testes/ -v
 ```
 
-São 130 verificações cobrindo os geradores de passos, o vínculo entre passos e
-linhas do pseudocódigo, as regras de negócio, a camada de dados, as regras de
+São 200 verificações cobrindo os geradores de passos, o vínculo entre passos e
+linhas do pseudocódigo, os gabaritos das questões visuais (conferidos contra a
+execução real dos algoritmos), a migração do banco de questões, as regras de
+negócio, a camada de dados, as regras de
 sinalização do dashboard, a identificação do aluno, o resumo da visita e os
 pop-ups (via `streamlit.testing.v1.AppTest`, sobre um banco temporário).
 
@@ -77,12 +83,14 @@ algovis/
 ├── dados/                    CAMADA DE DADOS
 │   ├── banco.py              Conexão e esquema SQLite
 │   ├── repositorio.py        Único lugar do projeto que escreve SQL
-│   └── seed.py               Carga inicial
+│   ├── seed.py               Carga inicial e migrações do banco de questões
+│   └── questoes_extras.py    Questões da versão 2 (5 teóricas + 2 visuais por conteúdo)
 │
 └── testes/
     ├── test_algoritmos.py
     ├── test_fluxo.py
     ├── test_pseudocodigo.py
+    ├── test_questoes_extras.py
     └── test_regras.py
 ```
 

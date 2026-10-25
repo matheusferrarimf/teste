@@ -1,6 +1,8 @@
-"""Carga inicial do banco.
+"""Carga inicial do banco e migracoes do banco de questoes.
 
-Executada uma unica vez, na primeira abertura da aplicacao. As questoes
+A carga inicial roda uma unica vez, num banco vazio. As versoes seguintes
+do banco de questoes sao aplicadas por migracao (ver popular_se_vazio), o
+que preserva as respostas e avaliacoes ja coletadas. As questoes
 com visualizacao entram com editavel = 0, porque dependem do gerador de
 passos de um algoritmo especifico e nao podem ser criadas pela tela de
 cadastro.
@@ -11,6 +13,12 @@ import json
 from algoritmos import MOTORES
 
 from .banco import consultar_um, executar
+from .questoes_extras import TEORICAS_V2, VISUAIS_V2
+
+# Versao do banco de questoes, gravada em PRAGMA user_version.
+# 1 = carga original (TEORICAS e VISUAIS abaixo)
+# 2 = questoes extras de dados/questoes_extras.py
+VERSAO_ATUAL = 2
 
 DISCIPLINAS = [
     ("Algoritmos I", "Conceitos iniciais e busca sequencial", 1, [
@@ -157,11 +165,47 @@ def _inserir_alternativas(id_questao, alternativas, correta):
         )
 
 
-def popular_se_vazio() -> None:
-    ja_tem = consultar_um("SELECT COUNT(*) AS n FROM disciplina")
-    if ja_tem and ja_tem["n"] > 0:
-        return
+def _ja_existe(id_conteudo, enunciado) -> bool:
+    """Evita duplicar uma questao caso a migracao seja interrompida e reexecutada."""
+    return consultar_um(
+        "SELECT 1 AS ok FROM questao WHERE id_conteudo = ? AND enunciado = ?",
+        (id_conteudo, enunciado),
+    ) is not None
 
+
+def _inserir_teoricas(questoes) -> None:
+    for conteudo, enunciado, alts, correta, nivel, peso, explicacao in questoes:
+        id_conteudo = _id_conteudo(conteudo)
+        if _ja_existe(id_conteudo, enunciado):
+            continue
+        cur = executar(
+            """INSERT INTO questao
+               (id_conteudo, enunciado, tipo_questao, nivel_dificuldade, peso, explicacao, editavel)
+               VALUES (?, ?, 'teorica', ?, ?, ?, 1)""",
+            (id_conteudo, enunciado, nivel, peso, explicacao),
+        )
+        _inserir_alternativas(cur.lastrowid, alts, correta)
+
+
+def _inserir_visuais(questoes) -> None:
+    for (conteudo, chave_alg, lista, alvo, enunciado, alts,
+         correta, nivel, peso, explicacao) in questoes:
+        id_conteudo = _id_conteudo(conteudo)
+        if _ja_existe(id_conteudo, enunciado):
+            continue
+        id_alg = consultar_um("SELECT id_algoritmo FROM algoritmo WHERE chave = ?", (chave_alg,))
+        cur = executar(
+            """INSERT INTO questao
+               (id_conteudo, id_algoritmo, enunciado, tipo_questao, nivel_dificuldade,
+                peso, lista_inicial, valor_procurado, explicacao, editavel)
+               VALUES (?, ?, ?, 'visual', ?, ?, ?, ?, ?, 0)""",
+            (id_conteudo, id_alg["id_algoritmo"], enunciado, nivel, peso,
+             json.dumps(lista), alvo, explicacao),
+        )
+        _inserir_alternativas(cur.lastrowid, alts, correta)
+
+
+def _carga_inicial() -> None:
     for nome, descricao, ordem, conteudos in DISCIPLINAS:
         cur = executar(
             "INSERT INTO disciplina (nome, descricao, ordem) VALUES (?, ?, ?)",
@@ -180,24 +224,29 @@ def popular_se_vazio() -> None:
             (chave, motor["nome"], motor["tipo"], motor["complexidade"]),
         )
 
-    for conteudo, enunciado, alts, correta, nivel, peso, explicacao in TEORICAS:
-        cur = executar(
-            """INSERT INTO questao
-               (id_conteudo, enunciado, tipo_questao, nivel_dificuldade, peso, explicacao, editavel)
-               VALUES (?, ?, 'teorica', ?, ?, ?, 1)""",
-            (_id_conteudo(conteudo), enunciado, nivel, peso, explicacao),
-        )
-        _inserir_alternativas(cur.lastrowid, alts, correta)
+    _inserir_teoricas(TEORICAS)
+    _inserir_visuais(VISUAIS)
 
-    for (conteudo, chave_alg, lista, alvo, enunciado, alts,
-         correta, nivel, peso, explicacao) in VISUAIS:
-        id_alg = consultar_um("SELECT id_algoritmo FROM algoritmo WHERE chave = ?", (chave_alg,))
-        cur = executar(
-            """INSERT INTO questao
-               (id_conteudo, id_algoritmo, enunciado, tipo_questao, nivel_dificuldade,
-                peso, lista_inicial, valor_procurado, explicacao, editavel)
-               VALUES (?, ?, ?, 'visual', ?, ?, ?, ?, ?, 0)""",
-            (_id_conteudo(conteudo), id_alg["id_algoritmo"], enunciado, nivel, peso,
-             json.dumps(lista), alvo, explicacao),
-        )
-        _inserir_alternativas(cur.lastrowid, alts, correta)
+
+def _versao_do_banco() -> int:
+    return consultar_um("PRAGMA user_version")["user_version"]
+
+
+def popular_se_vazio() -> None:
+    """Cria a carga inicial num banco vazio e aplica as migracoes pendentes.
+
+    Bancos ja em uso (com respostas e avaliacoes coletadas) nao sao
+    recriados: apenas recebem as questoes das versoes que ainda nao tem.
+    A versao fica registrada em PRAGMA user_version, para que uma questao
+    excluida pelo professor na tela de cadastro nao volte a cada abertura.
+    """
+    ja_tem = consultar_um("SELECT COUNT(*) AS n FROM disciplina")
+    if not ja_tem or ja_tem["n"] == 0:
+        _carga_inicial()
+
+    versao = _versao_do_banco()
+    if versao < 2:
+        _inserir_teoricas(TEORICAS_V2)
+        _inserir_visuais(VISUAIS_V2)
+    if versao < VERSAO_ATUAL:
+        executar(f"PRAGMA user_version = {VERSAO_ATUAL}")
